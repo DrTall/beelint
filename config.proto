@@ -1,0 +1,70 @@
+package beelint;
+
+// The configuration consumed by beelint.py.
+message BeelintConfig {
+  optional string username = 1;
+  // The goal where lint violations should be posted.
+  optional string lint_goalname = 2;
+  repeated PermittedEepEntry permitted_eep_entry = 3;
+}
+
+// A set of Beeminder goals and DatePatterns for which they are allowed to eep!.
+// A goal not covered by a PermittedEepEntry is allowed to eep! on any day,
+// which is the same effect as specifying an empty PermittedEepEntry.
+//
+// If multiple PermittedEepEntrys apply to the same goal, the goal is in
+// violation if it violates any of them in isolation.
+//
+// There are optional start_dates on both the PermittedEepEntry and its
+// nested DatePattern which is slightly confusing. In general,
+// PermittedEepEntry.start_date will be compared against today's date while
+// PermittedEepEntry.date_pattern.start_date will be compared against
+// the eep! date of each goal individually. For example, if you leave for
+// vacation on April 10th but don't want to be linted for it until April 1,
+// you want to set PermittedEepEntry.start_date to April 1 and
+// PermittedEepEntry.date_pattern.start_date to April 10.
+message PermittedEepEntry {
+  // If missing, apply to all goals.
+  repeated string goalname = 1;
+  // The whitelist of acceptable eep! days for goals covered by this entry.
+  optional DatePattern date_pattern = 2;
+
+  // If true, the supplied DatePattern is treated as though its end_date is
+  // equal to the sooner of the specified end_date and the last day in the first
+  // consecutive block of non-matched dates starting from today.
+  //
+  // For example, suppose you want a weekends-off goal so your DatePattern's
+  // specific_weekday lists Monday-Friday. Suppose further that today is
+  // a Friday and the current eep! day is a Saturday. If this option is set
+  // false, the goal is in violation because its eep! day is not a permitted
+  // weekday. If this option is set true, the goal is only in violation if
+  // the eep! Saturday is tomorrow.
+  optional bool permit_all_after_first_forbidden_block = 3 [default = true];
+
+  // First day to enforce the entry. If missing, always in force.
+  // Format: %Y-%m-%d
+  optional string start_date = 4;
+}
+
+message DatePattern {
+  enum Weekday {
+      MONDAY = 0;
+      TUESDAY = 1;
+      WEDNESDAY = 2;
+      THURSDAY = 3;
+      FRIDAY = 4;
+      SATURDAY = 5;
+      SUNDAY = 6;
+  }
+
+  // Include only days of the week specified. If missing, exclude all days.
+  repeated Weekday specific_weekday = 1;
+  // First day to enforce the pattern. If missing, always in force.
+  // Format: %Y-%m-%d
+  // Must be less than end_date if both are specified.
+  optional string start_date = 3;
+  // Last day to enforce the pattern. If missing, always in force.
+  // Format: %Y-%m-%d
+  // Must be greater than start_date if both are specified.
+  optional string end_date = 4;
+}
