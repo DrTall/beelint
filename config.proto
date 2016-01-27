@@ -23,7 +23,7 @@ message BeelintConfig {
 // you want to set PermittedEepEntry.start_date to April 1 and
 // PermittedEepEntry.date_pattern.start_date to April 10.
 message PermittedEepEntry {
-  // If missing, apply to all goals.
+  // If missing, apply to all goals (except lint_goalname).
   repeated string goalname = 1;
   // The whitelist of acceptable eep! days for goals covered by this entry.
   optional DatePattern date_pattern = 2;
