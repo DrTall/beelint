@@ -9,8 +9,7 @@ message BeelintConfig {
 }
 
 // A set of Beeminder goals and DatePatterns for which they are allowed to eep!.
-// A goal not covered by a PermittedEepEntry is allowed to eep! on any day,
-// which is the same effect as specifying an empty PermittedEepEntry.
+// A goal not covered by a PermittedEepEntry is allowed to eep! on any day.
 //
 // If multiple PermittedEepEntrys apply to the same goal, the goal is in
 // violation if it violates any of them in isolation.
