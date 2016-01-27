@@ -1,0 +1,6 @@
+username: "your username"
+lint_goalname: "your lint goalname"
+
+permitted_eep_entry {
+  # Refer to config.proto or example_config!
+}

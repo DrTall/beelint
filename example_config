@@ -1,0 +1,42 @@
+username: "busy_bee"
+lint_goalname: "beelint"
+
+# Mark some goals as weekends off.
+permitted_eep_entry {
+  goalname: "goal1"
+  goalname: "goal2"
+
+  date_pattern {
+    specific_weekday: MONDAY
+    specific_weekday: TUESDAY
+    specific_weekday: WEDNESDAY
+    specific_weekday: THURSDAY
+    specific_weekday: FRIDAY
+  }
+}
+
+# Skip some Beeminding on Thursdays this April.
+permitted_eep_entry {
+  goalname: "goal1"
+  goalname: "goal2"
+
+  date_pattern {
+    specific_weekday: MONDAY
+    specific_weekday: TUESDAY
+    specific_weekday: WEDNESDAY
+    specific_weekday: FRIDAY
+    specific_weekday: SATURDAY
+    specific_weekday: SUNDAY
+    start_date: "2016-4-1"
+    end_date: "2016-04-30"
+  }
+}
+
+# Vacation that's a long way off. Don't bother me about it until September.
+permitted_eep_entry {
+  date_pattern {
+    start_date: "2016-10-5"
+    end_date: "2016-10-10"
+  }
+  start_date: "2016-9-1"
+}
