@@ -1,7 +1,9 @@
 # beelint
 Verifies you are on track to succeed at your Beeminder goals.
 
-Beelint inspects your goals for "violations" which today means goals which are currently due on a day that is bad/wrong/inconvienent. For example, some goals are weekends only and some days you are on vacation. Beelint will complain about these problems and force you to fix them.
+Beelint inspects your goals for "violations" which today means goals which are currently due on a day that is bad/wrong/inconvienent. For example, some goals are weekends only and some days you are on vacation. Beelint will complain about these problems before you are actually having an eep! day, so you won't derail on your goals.
+
+Today Beelint offers two main violation types: day-of-week (`date_pattern`) and Google Calendar (`calendar_pattern`). Some examples of the capabilities can be found in `example_config`.
 
 ## Setup
 1. Clone this repo.
