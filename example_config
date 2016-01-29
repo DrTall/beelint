@@ -40,3 +40,26 @@ permitted_eep_entry {
   }
   start_date: "2016-9-1"
 }
+
+# These goals can only be done on very specific days. Mark them [GSD] in Calendar.
+permitted_eep_entry {
+  goalname: "goal1"
+  goalname: "goal2"
+
+  calendar_pattern {
+    name_regex: ".*\[GSD\].*"
+  }
+}
+
+# These goals are annoying to do when I'm out late. Mark them [NB] in calendar.
+permitted_eep_entry {
+  goalname: "goal1"
+  goalname: "goal2"
+
+  calendar_pattern {
+    name_regex: ".*\[NB\].*"
+    // Invert here because I'm using Calendar to mark the *bad* days, but this is
+    // inside a *permitted* eep entry.
+    invert: true
+  }
+}
