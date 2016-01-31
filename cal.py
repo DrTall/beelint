@@ -53,32 +53,3 @@ def evaluate_calendar_pattern_helper(calendar_data, name_pat, date):
       if start < date and date < end:
         return event
   return None
-
-def evaluate_calendar_pattern(calendar_data, calendar_pattern, data, goalname, permit_all_after_first_forbidden_block):
-  losedate = datetime.fromtimestamp(data[goalname]['losedate'])
-  name_pat = re.compile(calendar_pattern.name_regex)
-  event = evaluate_calendar_pattern_helper(calendar_data, name_pat, losedate)
-  if bool(event) == calendar_pattern.invert:
-    if not permit_all_after_first_forbidden_block:
-      print "Illegal eep! day for %s due to calendar restriction: %s" % (goalname, event['summary'])
-      return True
-    # Have to go looking for the first forbidden block between now and the eep!.
-    # See permit_all_after_first_forbidden_block in config.proto.
-    now = NOW
-    found_forbidden_block = False
-    # Explicitly iterating is uglier than being clever but easier to reason about.
-    while now < losedate:
-      now_illegal = evaluate_calendar_pattern_helper(calendar_data, name_pat, now)
-      if now_illegal:
-        found_forbidden_block = True
-      elif found_forbidden_block:
-        print 'Valid eep! day for %s despite calendar restriction because %s ends the first forbidden block: %s' % (
-            goalname, now, event['summary'])
-        return False
-      # This is probably not legitimate in regards to timezones and/or non-midnight deadlines.
-      now += timedelta(days=1)
-    print 'Illegal eep! day for %s due to calendar restriction with no suitable forbidden block beforehand: %s' % (
-        goalname, event['summary'])
-    return True
-  print 'Valid eep! day for %s w.r.t. calendar restriction.' % goalname
-  return False
