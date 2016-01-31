@@ -35,24 +35,12 @@ message PermittedEepEntry {
   // A whitelist of acceptable eep! days for goals covered by this entry.
   optional DatePattern date_pattern = 2;
 
-  // If true, the supplied DatePattern is treated as though its end_date is
-  // equal to the sooner of the specified end_date and the last day in the first
-  // consecutive block of non-matched dates starting from today.
-  //
-  // For example, suppose you want a weekends-off goal so your DatePattern's
-  // specific_weekday lists Monday-Friday. Suppose further that today is
-  // a Friday and the current eep! day is a Saturday. If this option is set
-  // false, the goal is in violation because its eep! day is not a permitted
-  // weekday. If this option is set true, the goal is only in violation if
-  // the eep! Saturday is tomorrow.
-  optional bool permit_all_after_first_forbidden_block = 3 [default = true];
-
   // First day to enforce the entry. If missing, always in force.
   // Format: %Y-%m-%d
-  optional string start_date = 4;
+  optional string start_date = 3;
 
   // A whitelist of acceptable eep! days for goals covered by this entry.
-  optional CalendarPattern calendar_pattern = 5;
+  optional CalendarPattern calendar_pattern = 4;
 }
 
 message DatePattern {

@@ -46,23 +46,34 @@ def evaluate_date_pattern_helper(pat, data, goalname, losedate):
   return losedate.weekday() not in pat.specific_weekday
 
 
-def evaluate_permitted_eep_entry_helper(entry, data, goalname, losedate):
-  date_violation, calendar_violation = False, False
-  if permitted_eep_entry.HasField('date_pattern'):
-    date_violation = evaluate_date_pattern_helper(
-        permitted_eep_entry.date_pattern,
-        data,
-        goalname,
-        losedate)
-  if permitted_eep_entry.HasField('calendar_pattern'):
-    if calendar_data is None:
-      calendar_data = cal.get_calendar_events(
-          config.calendar_id,
-          max(datetime.fromtimestamp(g['losedate']) for g in data.values()))
-    calendar_violation = evaluate_calendar_pattern_helper(calendar_data,
-        permitted_eep_entry.calendar_pattern.name_regex,
-        losedate)
-  return date_violation, calendar_violation
+# Returns date_violation, calendar_violation
+def evaluate_permitted_eep_entry_helper(config, data, goalname, losedate):
+  global calendar_data, NOW
+
+  for permitted_eep_entry in config.permitted_eep_entry:
+    if permitted_eep_entry.start_date and dateparser.parse(permitted_eep_entry.start_date) > NOW:
+      continue
+    if permitted_eep_entry.goalname and goalname not in permitted_eep_entry.goalname:
+      continue
+    if permitted_eep_entry.HasField('date_pattern'):
+      date_violation = evaluate_date_pattern_helper(
+          permitted_eep_entry.date_pattern,
+          data,
+          goalname,
+          losedate)
+      if date_violation:
+        return date_violation, None
+    if permitted_eep_entry.HasField('calendar_pattern'):
+      if calendar_data is None:
+        calendar_data = cal.get_calendar_events(
+            config.calendar_id,
+            max(datetime.fromtimestamp(g['losedate']) for g in data.values()))
+      calendar_violation = cal.evaluate_calendar_pattern_helper(calendar_data,
+          permitted_eep_entry.calendar_pattern.name_regex,
+          losedate)
+      if calendar_violation:
+        return None, calendar_violation
+  return None, None
 
 NOW = datetime.now()
 DIFF_SINCE = NOW - timedelta(weeks=4)
@@ -82,47 +93,35 @@ del goals
 violations = set()
 config = get_config('config')
 calendar_data = None
-for permitted_eep_entry in config.permitted_eep_entry:
-  if permitted_eep_entry.start_date and dateparser.parse(permitted_eep_entry.start_date) > NOW:
-    print 'Skipping future permitted_eep_entry: %s' % (permitted_eep_entry)
+for goalname in sorted(data, key=lambda d: data[d]['losedate']):
+  if goalname == config.lint_goalname:
+    print 'Skipping lint on the lint_goalname because that can lead to unrecoverable eep!s.'
     continue
 
-  for goalname in permitted_eep_entry.goalname or sorted(data, key=lambda d: data[d]['losedate']):
-    if goalname == config.lint_goalname:
-      print 'Skipping lint on the lint_goalname because that can lead to unrecoverable eep!s.'
-      continue
-    losedate = datetime.fromtimestamp(data[goalname]['losedate'])
-    date_violation, calendar_violation = evaluate_permitted_eep_entry_helper(permitted_eep_entry, data, goalname, losedate)
-    if not date_violation and not calendar_violation:
-      print'Valid eep! day for %s' % goalname
-    elif not permitted_eep_entry.permit_all_after_first_forbidden_block:
-      if date_violation:
-        print 'Illegal eep! day of week for %s.' % goalname
-      else:
-        print 'Illegal eep! day for %s. Calendar conflict with: %s' % (goalname, calendar_violation)
-      violations.add(goalname)
+  losedate = datetime.fromtimestamp(data[goalname]['losedate'])
+  date_violation, calendar_violation = evaluate_permitted_eep_entry_helper(config, data, goalname, losedate)
+  if not date_violation and not calendar_violation:
+    print'Valid eep! day for %s' % goalname
+  else:
+    # Have to go looking for the first forbidden block between now and the eep!.
+    # See permit_all_after_first_forbidden_block in config.proto.
+    now = NOW
+    found_forbidden_block = False
+    # Explicitly iterating is uglier than being clever but easier to reason about.
+    while now < losedate:
+      if any(evaluate_permitted_eep_entry_helper(config, data, goalname, now)):
+        found_forbidden_block = True
+      elif found_forbidden_block:
+        print 'Valid eep! day for %s. Would be illegal but %s ends the first forbidden block' % (goalname, now)
+        break
+      # This is probably not legitimate in regards to timezones and/or non-midnight deadlines.
+      now += timedelta(days=1)
     else:
-      # Have to go looking for the first forbidden block between now and the eep!.
-      # See permit_all_after_first_forbidden_block in config.proto.
-      now = NOW
-      if permitted_eep_entry.start_date and dateparser.parse(permitted_eep_entry.start_date) > now:
-        now = dateparser.parse(permitted_eep_entry.start_date)
-      found_forbidden_block = False
-      # Explicitly iterating is uglier than being clever but easier to reason about.
-      while now < losedate:
-        if any(evaluate_permitted_eep_entry_helper(permitted_eep_entry, data, goalname, now)):
-          found_forbidden_block = True
-        elif found_forbidden_block:
-          print 'Valid eep! day for %s. Would be illegal but %s ends the first forbidden block' % (goalname, now)
-          break
-        # This is probably not legitimate in regards to timezones and/or non-midnight deadlines.
-        now += timedelta(days=1)
+      if date_violation:
+        print 'Illegal eep! day of week for %s with no suitable forbidden block beforehand.' % goalname
       else:
-        if date_violation:
-          print 'Illegal eep! day of week for %s with no suitable forbidden block beforehand.' % goalname
-        else:
-          print 'Illegal eep! day for %s with no suitable forbidden block beforehand. Calendar conflict with: %s' % (goalname, calendar_violation)
-        violations.add(goalname)
+        print 'Illegal eep! day for %s with no suitable forbidden block beforehand. Calendar conflict with: %s' % (goalname, calendar_violation)
+      violations.add(goalname)
 
 
 if not violations:
