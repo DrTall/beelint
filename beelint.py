@@ -36,40 +36,41 @@ def post_datum(username, goalname, value, comment):
   print r.status_code
   print r.content
 
-def evaluate_date_pattern(pat, data, goalname, permit_all_after_first_forbidden_block):
-  losedate = datetime.fromtimestamp(data[goalname]['losedate'])
+def evaluate_date_pattern_helper(pat, data, goalname, losedate):
   if pat.start_date and dateparser.parse(pat.start_date) > losedate:
     print 'Skipping future permitted_eep_entry for %s: %s' % (goalname, permitted_eep_entry)
-  elif pat.end_date and dateparser.parse(pat.end_date) < losedate:
+    return false
+  if pat.end_date and dateparser.parse(pat.end_date) < losedate:
     print 'Skipping expired permitted_eep_entry for %s: %s' % (goalname, permitted_eep_entry)
-  elif losedate.weekday() in pat.specific_weekday:
-    print 'Valid eep! day for %s: %s in %s' % (goalname, losedate.weekday(), pat.specific_weekday)
-  elif not permit_all_after_first_forbidden_block:
-    violation = 'Illegal eep! day for %s: %s not in %s.' % (
+    return false
+  return losedate.weekday() not in pat.specific_weekday
+
+
+def evaluate_date_pattern(pat, data, goalname, permit_all_after_first_forbidden_block):
+  losedate = datetime.fromtimestamp(data[goalname]['losedate'])
+  violation = evaluate_date_pattern_helper(pat, data, goalname, losedate)
+  if not violation or not permit_all_after_first_forbidden_block:
+    return violation
+  # Have to go looking for the first forbidden block between now and the eep!.
+  # See permit_all_after_first_forbidden_block in config.proto.
+  now = NOW
+  if pat.start_date and dateparser.parse(pat.start_date) > now:
+    now = dateparser.parse(pat.start_date)
+  found_forbidden_block = False
+  # Explicitly iterating is uglier than being clever but easier to reason about.
+  while now < losedate:
+    if evaluate_date_pattern_helper(pat, data, goalname, now):
+      found_forbidden_block = True
+    elif found_forbidden_block:
+      print 'Valid eep! day for %s: %s not in %s but %s ends the first forbidden block' % (
+          goalname, losedate.weekday(), pat.specific_weekday, now)
+      break
+    # This is probably not legitimate in regards to timezones and/or non-midnight deadlines.
+    now += timedelta(days=1)
+  else:
+    violation = 'Illegal eep! day for %s: %s not in %s with no suitable forbidden block beforehand.' % (
         goalname, losedate.weekday(), pat.specific_weekday)
     return True
-  else:
-    # Have to go looking for the first forbidden block between now and the eep!.
-    # See permit_all_after_first_forbidden_block in config.proto.
-    now = NOW
-    if pat.start_date and dateparser.parse(pat.start_date) > now:
-      now = dateparser.parse(pat.start_date)
-    found_forbidden_block = False
-    # Explicitly iterating is uglier than being clever but easier to reason about.
-    while now < losedate:
-      if now.weekday() not in pat.specific_weekday:
-        found_forbidden_block = True
-      if found_forbidden_block and now.weekday() in pat.specific_weekday:
-        print 'Valid eep! day for %s: %s not in %s but %s ends the first forbidden block' % (
-            goalname, losedate.weekday(), pat.specific_weekday, now)
-        break
-      # This is probably not legitimate in regards to timezones and/or non-midnight deadlines.
-      now += timedelta(days=1)
-    else:
-      violation = 'Illegal eep! day for %s: %s not in %s with no suitable forbidden block beforehand.' % (
-          goalname, losedate.weekday(), pat.specific_weekday)
-      return True
-  return False
 
 NOW = datetime.now()
 DIFF_SINCE = NOW - timedelta(weeks=4)
