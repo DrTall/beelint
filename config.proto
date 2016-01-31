@@ -21,6 +21,13 @@ message BeelintConfig {
 // are provided on a PermittedEepEntrys, the goal is in violation if it
 // violates any of them in isolation.
 //
+// If a goal is, at first glance, in an illegal state, we then check
+// if there is a forbidden day followed by a legal day between now and
+// the goal's eep! day. The idea is that we want to lint on the first day
+// of the last consecutive permitted block. For example, if the idea is to
+// make a goal weekends only, we do not want to lint a weekday eep! goal
+// if there is another weekend between now and then.
+//
 // There are optional start_dates on both the PermittedEepEntry and its
 // nested DatePattern which is slightly confusing. In general,
 // PermittedEepEntry.start_date will be compared against today's date while
