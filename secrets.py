@@ -3,6 +3,9 @@
 # https://developers.google.com/google-apps/calendar/quickstart/python
 # You will need to follow all of steps #1 and #2. You can try running
 # the sample provided in #3 to verify, or just try running beelint.
+#
+# This variable should be set to the name you gave to your secrets file
+# in step 1.g of the Google quickstart.
 CLIENT_SECRET_FILE = ''
 
 
