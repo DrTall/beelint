@@ -138,7 +138,7 @@ else:
   comment = ','.join(sorted(violations))
   print 'Might post data to Beeminder: %s (%s)' % (value, comment)
   last_data = data[config.lint_goalname]['datapoints'][-1:]
-  if not last_data or int(last_data[0]['value']) != value or last_data[0]['comment'] != comment:
+  if not last_data or dateparser.parse(last_data[0]['daystamp']).date() != date.today() or int(last_data[0]['value']) != value or last_data[0]['comment'] != comment:
     print 'Proceeding with update, since %s != %s' % (last_data, value)
     post_datum(config.username, config.lint_goalname, value, comment)
   else:
