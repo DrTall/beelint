@@ -107,6 +107,9 @@ for goalname in sorted(data, key=lambda d: data[d]['losedate']):
     # See permit_all_after_first_forbidden_block in config.proto.
     now = NOW
     found_forbidden_block = False
+    if any(evaluate_permitted_eep_entry_helper(config, data, goalname, now)):
+      print 'Valid eep! day for %s. Would be illegal but today is illegal too.' % (goalname)
+      continue
     # Explicitly iterating is uglier than being clever but easier to reason about.
     while now < losedate:
       if any(evaluate_permitted_eep_entry_helper(config, data, goalname, now)):
