@@ -107,6 +107,9 @@ for goalname in sorted(data, key=lambda d: data[d]['losedate']):
     # See permit_all_after_first_forbidden_block in config.proto.
     now = NOW
     found_forbidden_block = False
+    if any(evaluate_permitted_eep_entry_helper(config, data, goalname, now)):
+      print 'Valid eep! day for %s. Would be illegal but today is illegal too.' % (goalname)
+      continue
     # Explicitly iterating is uglier than being clever but easier to reason about.
     while now < losedate:
       if any(evaluate_permitted_eep_entry_helper(config, data, goalname, now)):
@@ -138,7 +141,7 @@ else:
   comment = ','.join(sorted(violations))
   print 'Might post data to Beeminder: %s (%s)' % (value, comment)
   last_data = data[config.lint_goalname]['datapoints'][-1:]
-  if not last_data or int(last_data[0]['value']) != value or last_data[0]['comment'] != comment:
+  if not last_data or dateparser.parse(last_data[0]['daystamp']).date() != date.today() or int(last_data[0]['value']) != value or last_data[0]['comment'] != comment:
     print 'Proceeding with update, since %s != %s' % (last_data, value)
     post_datum(config.username, config.lint_goalname, value, comment)
   else:
