@@ -11,6 +11,9 @@ message BeelintConfig {
 
   // The id of the calendar to read for CalendarPatterns.
   optional string calendar_id = 4 [default = "primary"];
+
+  // Additional options about individual goals.
+  repeated GoalMetadata goal_metadata = 5;
 }
 
 // A set of Beeminder goals and DatePatterns for which they are allowed to eep!.
@@ -79,4 +82,13 @@ message CalendarPattern {
 
   // Return the set of days that do NOT match instead.
   optional bool invert = 2 [default = false];
+}
+
+message GoalMetadata {
+  optional string goalname = 1;
+
+  // If set, this goal will not generate lint errors if it has data entered
+  // today. This is useful for true/false goals which can only get one
+  // data point per day.
+  optional bool always_valid_if_data_today = 2;
 }

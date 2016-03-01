@@ -79,6 +79,9 @@ NOW = datetime.now()
 DIFF_SINCE = NOW - timedelta(weeks=4)
 DIFF_SINCE_EPOCH = epoch_time(DIFF_SINCE)
 
+config = get_config('config')
+metadata = {metadatum.goalname[0]: {'always_valid_if_data_today': metadatum.always_valid_if_data_today} for metadatum in config.goal_metadata if metadatum.goalname}
+
 goals = []
 beeminder_url = 'https://www.beeminder.com/api/v1/users/me.json'
 beeminder_url += ('?diff_since=%s&' % DIFF_SINCE_EPOCH) + urllib.urlencode(
@@ -91,11 +94,18 @@ data = {g['slug']:g for g in goals}
 del goals
 
 violations = set()
-config = get_config('config')
 calendar_data = None
 for goalname in sorted(data, key=lambda d: data[d]['losedate']):
   if goalname == config.lint_goalname:
     print 'Skipping lint on the lint_goalname because that can lead to unrecoverable eep!s.'
+    continue
+
+  if (goalname in metadata and
+      metadata[goalname]['always_valid_if_data_today'] and
+      data[goalname]['datapoints'] and
+      # This is probably not legitimate in regards to timezones and/or non-midnight deadlines.
+      dateparser.parse(data[goalname]['datapoints'][-1]['daystamp']).date() == date.today()):
+    print 'Skipping lint on %s because it has data for today and always_valid_if_data_today.' % goalname
     continue
 
   losedate = datetime.fromtimestamp(data[goalname]['losedate'])
